@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -11,8 +12,12 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.os.Bundle;
 import android.os.Handler;
+import android.printservice.CustomPrinterIconCallback;
+import android.util.Base64;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Toast;
@@ -25,7 +30,17 @@ import androidx.core.content.ContextCompat;
 import com.professorperson.lukesmindmobile.R;
 import com.professorperson.lukesmindmobile.services.FlashService;
 
+import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
+
+import io.reactivex.internal.subscribers.BoundedSubscriber;
+import ua.naiksoftware.stomp.Stomp;
+import ua.naiksoftware.stomp.StompClient;
+
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -40,17 +55,18 @@ public class CameraActivity extends AppCompatActivity {
     private CaptureRequest.Builder requestBuilder;
     private CameraCaptureSession cameraSession;
 
+    private StompClient stompClient;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
         cameraPreview = findViewById(R.id.cameraPreview);
-        manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
 
+        manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             cameraId = manager.getCameraIdList()[0];
         } catch (CameraAccessException e) {}
-
 
         textureListener = new TextureView.SurfaceTextureListener() {
             @Override
@@ -73,16 +89,19 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-
+                sendFrame();
             }
         };
+
     }
 
     @Override
     public void onResume() {
         super.onResume();
 
-        startService(new Intent(this, FlashService.class));
+        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, "ws://lukesmind.herokuapp.com/frame/websocket");
+        stompClient.connect();
+
         cameraPreview.setSurfaceTextureListener(textureListener);
     }
 
@@ -133,10 +152,8 @@ public class CameraActivity extends AppCompatActivity {
                 cameraDevice = camera;
 
                 try {
-                    Toast.makeText(getApplicationContext(), "Camera activated", Toast.LENGTH_LONG).show();
                     startCameraPreview();
                 } catch (Exception e) {}
-
             }
 
             @Override
@@ -156,12 +173,12 @@ public class CameraActivity extends AppCompatActivity {
 
     private void startCameraPreview() throws CameraAccessException {
         SurfaceTexture texture = cameraPreview.getSurfaceTexture();
-        cameraPreview.getWidth();
-        texture.setDefaultBufferSize(2000, 2000);
+        texture.setDefaultBufferSize(10, 10);
         Surface surface = new Surface(texture);
 
         requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         requestBuilder.addTarget(surface);
+
         cameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(@NonNull CameraCaptureSession session) {
@@ -185,9 +202,21 @@ public class CameraActivity extends AppCompatActivity {
         }
         requestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
         try {
-            cameraSession.setRepeatingRequest(requestBuilder.build(),null, new Handler());
+            cameraSession.setRepeatingRequest(requestBuilder.build(), null, new Handler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
+
+
     }
+
+    private void sendFrame() {
+            Bitmap image = cameraPreview.getBitmap();
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            image.compress(Bitmap.CompressFormat.JPEG, 1, os);
+            String base64 = Base64.encodeToString(os.toByteArray(), Base64.DEFAULT);
+
+            stompClient.send("/app/send_frame", base64).subscribe();
+    }
+
 }

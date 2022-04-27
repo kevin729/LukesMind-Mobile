@@ -41,7 +41,8 @@ public class Http {
         if (c.getActiveNetworkInfo() == null || !c.getActiveNetworkInfo().isConnected()) {
             return "";
         }
-            String[] response = new String[1];
+
+        String[] response = new String[1];
         Thread thread = new Thread(() -> {
              response[0] = httpRequest(_url, "PUT", data);
         });

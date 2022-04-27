@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".views.YoutubeVideos"
-    android:background="@color/black"
+    android:background="@color/teal_700"
     android:padding="100dp"
     android:id="@+id/youtubeLayout">
 
