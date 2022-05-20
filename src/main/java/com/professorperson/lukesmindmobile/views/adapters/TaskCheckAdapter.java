@@ -53,7 +53,7 @@ public class TaskCheckAdapter extends ArrayAdapter<Task> {
             }
 
             Thread thread = new Thread(() -> {
-                Http.put("https://lukesmind.herokuapp.com/api/modify_task", new Gson().toJson(task), getContext());
+                Http.put("https://lukemind.herokuapp.com/api/modify_task", new Gson().toJson(task), getContext());
             });
 
             thread.start();
@@ -74,7 +74,7 @@ public class TaskCheckAdapter extends ArrayAdapter<Task> {
                     task.setPriority(priority);
                     Toast.makeText(getContext(), Integer.toString(priority), Toast.LENGTH_SHORT).show();
                     Thread thread = new Thread(() -> {
-                        Http.put("https://lukesmind.herokuapp.com/api/modify_task", new Gson().toJson(task), getContext());
+                        Http.put("https://lukemind.herokuapp.com/api/modify_task", new Gson().toJson(task), getContext());
                     });
 
                     thread.start();

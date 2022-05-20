@@ -24,7 +24,7 @@ public class YoutubeVideos extends AppCompatActivity {
         RelativeLayout layout =  findViewById(R.id.youtubeLayout);
         YouTubePlayerView previousView = null;
 
-        String json = Http.get("https://lukesmind.herokuapp.com/api/get_youtube_videos", this);
+        String json = Http.get("https://lukemind.herokuapp.com/api/get_youtube_videos", this);
         String[] videos = new Gson().fromJson(json, String[].class);
 
         for (int i = 0; i < videos.length; i++) {

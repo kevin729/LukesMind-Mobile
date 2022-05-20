@@ -29,7 +29,7 @@ public class TaskActivity extends AppCompatActivity {
 
         String[] response = new String[1];
         Thread thread = new Thread(() -> {
-            response[0] = Http.get("https://lukesmind.herokuapp.com/api/get_tasks/1", this);
+            response[0] = Http.get("https://lukemind.herokuapp.com/api/get_tasks/1", this);
         });
 
         thread.start();

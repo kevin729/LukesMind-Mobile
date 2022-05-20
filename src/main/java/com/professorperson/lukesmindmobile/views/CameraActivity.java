@@ -28,21 +28,15 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.professorperson.lukesmindmobile.R;
-import com.professorperson.lukesmindmobile.services.FlashService;
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-
-import io.reactivex.internal.subscribers.BoundedSubscriber;
 import ua.naiksoftware.stomp.Stomp;
 import ua.naiksoftware.stomp.StompClient;
 
 
-public class CameraActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity implements Runnable {
 
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA
@@ -57,12 +51,15 @@ public class CameraActivity extends AppCompatActivity {
 
     private StompClient stompClient;
 
+    private Thread thread;
+    private boolean running = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        cameraPreview = findViewById(R.id.cameraPreview);
 
+        cameraPreview = findViewById(R.id.cameraPreview);
         manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             cameraId = manager.getCameraIdList()[0];
@@ -89,20 +86,20 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-                sendFrame();
+//                if (delta >= 1) {
+//                    delta = 0;
+//                    sendFrame();
+//                }
             }
         };
 
+        thread = new Thread(this);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, "ws://lukesmind.herokuapp.com/frame/websocket");
-        stompClient.connect();
-
-        cameraPreview.setSurfaceTextureListener(textureListener);
+        start();
     }
 
 
@@ -113,8 +110,57 @@ public class CameraActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        cameraDevice.close();
+        stop();
         startActivity(new Intent(this, MainActivity.class));
+    }
+
+    public synchronized void start() {
+        if (running) {
+            return;
+        }
+
+        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, "ws://lukemind.herokuapp.com/frame/websocket");
+        stompClient.connect();
+        cameraPreview.setSurfaceTextureListener(textureListener);
+
+        running = true;
+        thread.start();
+    }
+
+    public synchronized void stop() {
+        running = false;
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+
+        }
+
+        cameraDevice.close();
+    }
+
+    @Override
+    public void run() {
+        loop();
+    }
+
+    private double delta;
+
+    private void loop() {
+        int fps = 15;
+        double time_per_frame = 1000000000 / fps;
+        delta = 0; // per frame (when to switch frames)
+        long prev_time = System.nanoTime();
+
+        while (running) {
+            long time = System.nanoTime();
+            delta += (time - prev_time) / time_per_frame;
+            prev_time = time;
+
+            if (delta >= 1) {
+                delta = 0;
+                sendFrame();
+            }
+        }
     }
 
     public void requestPermission(String permission, int requestCode) {
@@ -173,7 +219,7 @@ public class CameraActivity extends AppCompatActivity {
 
     private void startCameraPreview() throws CameraAccessException {
         SurfaceTexture texture = cameraPreview.getSurfaceTexture();
-        texture.setDefaultBufferSize(10, 10);
+        texture.setDefaultBufferSize(50, 50);
         Surface surface = new Surface(texture);
 
         requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -213,10 +259,11 @@ public class CameraActivity extends AppCompatActivity {
     private void sendFrame() {
             Bitmap image = cameraPreview.getBitmap();
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            image.compress(Bitmap.CompressFormat.JPEG, 1, os);
+            image.compress(Bitmap.CompressFormat.JPEG, 5, os);
             String base64 = Base64.encodeToString(os.toByteArray(), Base64.DEFAULT);
 
             stompClient.send("/app/send_frame", base64).subscribe();
     }
+
 
 }
