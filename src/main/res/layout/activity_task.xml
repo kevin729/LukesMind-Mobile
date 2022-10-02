@@ -7,10 +7,24 @@
     tools:context=".views.TaskActivity"
     android:background="@color/black">
 
-    <ListView
-        android:id="@+id/taskList"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:scrollbars="vertical">
+
+        <ListView
+            android:id="@+id/taskList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        </LinearLayout>
+    </ScrollView>
+
 
 
 

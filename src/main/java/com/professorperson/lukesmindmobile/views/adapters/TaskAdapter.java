@@ -20,6 +20,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +46,14 @@ public class TaskAdapter extends ArrayAdapter<Map<String, List<Task>>> {
         ListView taskList = view.findViewById(R.id.taskCheckList);
 
         Map<String, List<Task>> projects = getItem(position);
+
         for (Map.Entry<String, List<Task>> entry : projects.entrySet()) {
             //set project name
             taskTitle.setText(entry.getKey());
 
-            entry.getValue().sort(Comparator.comparingInt(Task::getPriority).reversed());
+            Comparator<Task> comparator = (o1, o2) -> o1.getPriority() - o2.getPriority();
+            Collections.sort(entry.getValue(), comparator);
+
             //set tasks
             TaskCheckAdapter adapter = new TaskCheckAdapter(getContext(), entry.getValue(), taskList);
             taskList.setAdapter(adapter);

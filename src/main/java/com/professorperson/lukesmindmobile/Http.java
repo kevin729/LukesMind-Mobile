@@ -58,6 +58,13 @@ public class Http {
         return response[0];
     }
 
+    /**
+     * open http connection and return response
+     * @param _url
+     * @param method
+     * @param data
+     * @return
+     */
     private static String httpRequest(String _url, String method, String data) {
 
         try {
