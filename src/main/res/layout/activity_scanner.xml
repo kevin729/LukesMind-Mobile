@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".views.ScannerActivity"
+    android:background="@color/black"
+    >
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="150sp"
+        android:text="@string/camera_title"
+        android:textSize="100sp"
+        android:textColor="@color/green"
+        android:gravity="center"
+        >
+    </TextView>
+
+
+
+        <Button
+            android:id="@+id/recordBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/title"
+            android:text="RECORD"/>
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/cameraView"
+            android:layout_width="match_parent"
+            android:layout_height="496dp"
+            android:layout_below="@id/recordBtn"></androidx.camera.view.PreviewView>
+
+
+
+
+
+
+
+</RelativeLayout>

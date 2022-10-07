@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         tasksBtn.setOnClickListener(v -> startActivity(new Intent(this, TaskActivity.class)));
 
         scannerBtn = findViewById(R.id.scannerBtn);
-        scannerBtn.setOnClickListener(v -> startActivity(new Intent(this, CameraActivity.class)));
+        scannerBtn.setOnClickListener(v -> startActivity(new Intent(this, ScannerActivity.class)));
 
         flashBtn = findViewById(R.id.flashBtn);
         flashBtn.setOnClickListener(v -> { startService(new Intent(this, FlashService.class));});

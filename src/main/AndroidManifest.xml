@@ -42,6 +42,10 @@
             android:name=".views.CameraActivity"
             android:exported="true" />
 
+        <activity
+            android:name=".views.ScannerActivity"
+            android:exported="true" />
+
         <service
             android:name=".services.FlashService"
             android:exported="false" />
