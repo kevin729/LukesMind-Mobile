@@ -1,22 +1,18 @@
 package com.professorperson.lukesmindmobile.views;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
-import androidx.camera.core.ImageCaptureException;
+
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.lifecycle.LifecycleOwner;
+
 
 import android.Manifest;
 import android.app.Activity;
@@ -33,17 +29,21 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.professorperson.lukesmindmobile.R;
 import com.professorperson.lukesmindmobile.models.Message;
+import com.professorperson.lukesmindmobile.models.Pattern;
 import com.professorperson.lukesmindmobile.services.FlashService;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.reactivestreams.Subscriber;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,7 +59,10 @@ import ua.naiksoftware.stomp.dto.StompMessage;
 public class ScannerActivity extends AppCompatActivity implements Runnable {
 
     private PreviewView cameraPreviewView;
+    private EditText patternText;
+    private TextView patternResult;
     private Button recordBtn;
+    private Button trainBtn;
     private ImageCapture imageCapture;
     private VideoCapture videoCapture;
 
@@ -82,17 +85,13 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
         checkCameraPermissions(this);
         openCamera();
 
+        patternText = findViewById(R.id.patternText);
+        patternResult = findViewById(R.id.patternResult);
         cameraPreviewView = findViewById(R.id.cameraView);
-
 
         recordBtn = findViewById(R.id.recordBtn);
         recordBtn.setOnClickListener(v -> {
             if (!running) {
-                Thread t = new Thread(() -> {
-                    startService(new Intent(this, FlashService.class));
-                });
-                t.start();
-
                 thread = new Thread(this);
                 thread.start();
             } else {
@@ -105,6 +104,11 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
                 }
             }
         });
+
+        trainBtn = findViewById(R.id.trainBtn);
+        trainBtn.setOnClickListener(v -> {
+            sendTrainingSet();
+        });
     }
 
     @Override
@@ -113,6 +117,14 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
 
         stompClient = Stomp.over(Stomp.ConnectionProvider.JWS, "ws://lukemind.herokuapp.com/frame/websocket");
         stompClient.connect();
+
+        stompClient.topic("/topic/messages").subscribe((response) -> {
+            Message message = new Gson().fromJson(response.getPayload(), Message.class);
+            Pattern result = new Gson().fromJson(message.getText(), Pattern.class);
+            if (result != null && !result.getName().isEmpty()) {
+                patternResult.setText(result.getName());
+            }
+        });
     }
 
     @Override
@@ -161,24 +173,6 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
         //camera.getCameraControl().enableTorch(true);
     }
 
-    private void capturePhoto() {
-        File photoFile = new File("/images");
-        if (!photoFile.exists())
-            photoFile.mkdir();
-
-        imageCapture.takePicture(new ImageCapture.OutputFileOptions.Builder(photoFile).build(), ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
-            @Override
-            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                Toast.makeText(getApplicationContext(), "Image Saved", Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onError(@NonNull ImageCaptureException exception) {
-                Toast.makeText(getApplicationContext(), exception.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
     public void run() {
         scan();
     }
@@ -192,7 +186,7 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
         checkCameraPermissions(this);
         running = true;
 
-        int fps = 3;
+        int fps = 1;
         double time_per_frame = 1000000000 / fps;
         double delta = 0; // per frame (when to switch frames)
         long prev_time = System.nanoTime();
@@ -215,7 +209,7 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
                Bitmap image = cameraPreviewView.getBitmap();
                image = Bitmap.createScaledBitmap(image, 128, 128, false);
                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-               image.compress(Bitmap.CompressFormat.JPEG, 50, bos);
+               image.compress(Bitmap.CompressFormat.JPEG, 10, bos);
                String base64 = Base64.encodeToString(bos.toByteArray(), Base64.DEFAULT);
 
                Message message = new Message();
@@ -225,6 +219,29 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
                stompClient.send("/app/send_message", new Gson().toJson(message)).doOnError(throwable -> {}).subscribe();
            }
        });
+    }
+
+    private void sendTrainingSet() {
+        mainHandler.post(() -> {
+            if (stompClient.isConnected()) {
+                Bitmap image = cameraPreviewView.getBitmap();
+                image = Bitmap.createScaledBitmap(image, 128, 128, false);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                image.compress(Bitmap.CompressFormat.JPEG, 10, bos);
+                String base64 = Base64.encodeToString(bos.toByteArray(), Base64.DEFAULT);
+
+                Message message = new Message();
+                message.setReceiver("CNNTrainingSet");
+                Pattern pattern = new Pattern();
+                pattern.setName(patternText.getText().toString());
+                pattern.setBase64(base64);
+
+                message.setText(new Gson().toJson(pattern));
+
+
+                stompClient.send("/app/send_message", new Gson().toJson(message)).doOnError(throwable -> {}).subscribe();
+            }
+        });
     }
 
     private void stop() {

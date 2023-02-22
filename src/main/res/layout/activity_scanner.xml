@@ -31,9 +31,29 @@
         <androidx.camera.view.PreviewView
             android:id="@+id/cameraView"
             android:layout_width="match_parent"
-            android:layout_height="496dp"
-            android:layout_below="@id/recordBtn"></androidx.camera.view.PreviewView>
+            android:layout_height="390dp"
+            android:layout_below="@id/patternText"></androidx.camera.view.PreviewView>
 
+    <Button
+        android:id="@+id/trainBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/recordBtn"
+        android:text="TRAIN"/>
+
+    <EditText
+        android:id="@+id/patternText"
+        android:background="@color/white"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/trainBtn" />
+
+    <TextView
+        android:id="@+id/patternResult"
+        android:background="@color/white"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_below="@id/cameraView" />
 
 
 
