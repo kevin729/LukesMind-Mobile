@@ -38,7 +38,6 @@ public class TaskCheckAdapter extends ArrayAdapter<Task> {
         View view = inflater.inflate(R.layout.taskcheck, parent, false);
 
         Task task = getItem(position);
-
         //complete
         CheckBox box = view.findViewById(R.id.checkbox);
         if ("DONE".equals(task.getStatus())) {

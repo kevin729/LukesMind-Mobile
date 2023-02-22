@@ -20,6 +20,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -41,6 +42,9 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA
     };
+
+    private TextView debug;
+
     private CameraManager manager;
     private String cameraId;
     private CameraDevice cameraDevice;
@@ -59,7 +63,9 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        debug = findViewById(R.id.debug);
         cameraPreview = findViewById(R.id.cameraPreview);
+
         manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             cameraId = manager.getCameraIdList()[0];
@@ -68,7 +74,6 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
         textureListener = new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-                requestPermission(Manifest.permission.CAMERA, 1);
                 try {
                     startCamera();
                 } catch (CameraAccessException e) {}
@@ -119,8 +124,9 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
             return;
         }
 
-        stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, "ws://lukemind.herokuapp.com/frame/websocket");
+        stompClient = Stomp.over(Stomp.ConnectionProvider.JWS, "ws://lukemind.herokuapp.com/frame/websocket");
         stompClient.connect();
+
         cameraPreview.setSurfaceTextureListener(textureListener);
 
         running = true;
@@ -146,7 +152,7 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
     private double delta;
 
     private void loop() {
-        int fps = 15;
+        int fps = 1;
         double time_per_frame = 1000000000 / fps;
         delta = 0; // per frame (when to switch frames)
         long prev_time = System.nanoTime();
@@ -159,30 +165,6 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
             if (delta >= 1) {
                 delta = 0;
                 sendFrame();
-            }
-        }
-    }
-
-    public void requestPermission(String permission, int requestCode) {
-        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(CameraActivity.this, new String[] { permission }, requestCode);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if(requestCode == 1)
-        {
-            if(grantResults[0] != PackageManager.PERMISSION_GRANTED)
-            {
-                Toast.makeText(this, "You can't use camera without permission", Toast.LENGTH_SHORT).show();
-                finish();
-            } else {
-                try {
-                    startCamera();
-                } catch (CameraAccessException e) {}
             }
         }
     }
@@ -219,7 +201,7 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
 
     private void startCameraPreview() throws CameraAccessException {
         SurfaceTexture texture = cameraPreview.getSurfaceTexture();
-        texture.setDefaultBufferSize(50, 50);
+        texture.setDefaultBufferSize(2000, 2000);
         Surface surface = new Surface(texture);
 
         requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
@@ -258,8 +240,13 @@ public class CameraActivity extends AppCompatActivity implements Runnable {
 
     private void sendFrame() {
             Bitmap image = cameraPreview.getBitmap();
+
+            if (image == null) {
+                return;
+            }
+
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            image.compress(Bitmap.CompressFormat.JPEG, 5, os);
+            image.compress(Bitmap.CompressFormat.JPEG, 15, os);
             String base64 = Base64.encodeToString(os.toByteArray(), Base64.DEFAULT);
 
             stompClient.send("/app/send_frame", base64).subscribe();

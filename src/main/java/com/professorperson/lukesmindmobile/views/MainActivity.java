@@ -34,4 +34,9 @@ public class MainActivity extends AppCompatActivity {
         youtubeBtn = findViewById(R.id.youtubeBtn);
         youtubeBtn.setOnClickListener(v -> startActivity(new Intent(this, YoutubeVideos.class)));
     }
+
+    @Override
+    public void onBackPressed() {
+        
+    }
 }

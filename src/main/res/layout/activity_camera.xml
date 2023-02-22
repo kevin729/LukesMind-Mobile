@@ -12,8 +12,11 @@
         android:text="@string/camera_title"/>
 
     <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:id="@+id/cameraPreviewFrame"
+        android:layout_width="300dp"
+        android:layout_height="500dp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
         android:padding="100px">
 
         <TextureView
@@ -23,6 +26,16 @@
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true" />
     </FrameLayout>
+
+    <TextView
+        android:id="@+id/debug"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textSize="40sp"
+        android:layout_below="@+id/cameraPreviewFrame"/>
+
+
 
 
 </RelativeLayout>

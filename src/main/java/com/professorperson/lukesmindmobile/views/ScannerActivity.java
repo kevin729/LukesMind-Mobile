@@ -1,18 +1,34 @@
 package com.professorperson.lukesmindmobile.views;
 
+<<<<<<< HEAD
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 
+=======
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+>>>>>>> dd050a6d922b80bc727f409d9f08c9ac087db66b
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+<<<<<<< HEAD
 
+=======
+import androidx.lifecycle.LifecycleOwner;
+>>>>>>> dd050a6d922b80bc727f409d9f08c9ac087db66b
 
 import android.Manifest;
 import android.app.Activity;
@@ -29,21 +45,31 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+<<<<<<< HEAD
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+=======
+import android.widget.ImageView;
+>>>>>>> dd050a6d922b80bc727f409d9f08c9ac087db66b
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.professorperson.lukesmindmobile.R;
 import com.professorperson.lukesmindmobile.models.Message;
+<<<<<<< HEAD
 import com.professorperson.lukesmindmobile.models.Pattern;
 import com.professorperson.lukesmindmobile.services.FlashService;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.reactivestreams.Subscriber;
+=======
+
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+>>>>>>> dd050a6d922b80bc727f409d9f08c9ac087db66b
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,10 +85,11 @@ import ua.naiksoftware.stomp.dto.StompMessage;
 public class ScannerActivity extends AppCompatActivity implements Runnable {
 
     private PreviewView cameraPreviewView;
+
     private EditText patternText;
     private TextView patternResult;
-    private Button recordBtn;
     private Button trainBtn;
+    private Button recordBtn;
     private ImageCapture imageCapture;
     private VideoCapture videoCapture;
 
@@ -75,7 +102,7 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
 
     public ScannerActivity() {
-
+        thread = new Thread(this);
     }
 
     @Override
@@ -109,6 +136,16 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
         trainBtn.setOnClickListener(v -> {
             sendTrainingSet();
         });
+
+        cameraPreviewView = findViewById(R.id.cameraView);
+
+
+        recordBtn = findViewById(R.id.recordBtn);
+        recordBtn.setOnClickListener(v -> {
+            if (!running) {
+                thread.start();
+            }
+        });
     }
 
     @Override
@@ -117,6 +154,7 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
 
         stompClient = Stomp.over(Stomp.ConnectionProvider.JWS, "ws://lukemind.herokuapp.com/frame/websocket");
         stompClient.connect();
+
 
         stompClient.topic("/topic/messages").subscribe((response) -> {
             Message message = new Gson().fromJson(response.getPayload(), Message.class);
@@ -220,6 +258,7 @@ public class ScannerActivity extends AppCompatActivity implements Runnable {
            }
        });
     }
+
 
     private void sendTrainingSet() {
         mainHandler.post(() -> {
